@@ -12,7 +12,7 @@ export class MovementController {
   };
   private readonly up = (event: KeyboardEvent) => this.keys.delete(event.key.toLowerCase());
   private readonly clear = () => { this.keys.clear(); this.joystick.set(0,0); };
-  constructor(private readonly camera: ArcRotateCamera, private readonly actor: {root: {position: Vector3;rotation: Vector3}; update(dt:number,moving:boolean)}, private readonly heightAt:(x:number,z:number)=>number) {
+  constructor(private readonly camera: ArcRotateCamera, private readonly actor: {root: {position: Vector3;rotation: Vector3}; update(dt:number,moving:boolean):void}, private readonly heightAt:(x:number,z:number)=>number) {
     window.addEventListener("keydown",this.down,{passive:false});
     window.addEventListener("keyup",this.up);
     window.addEventListener("blur",this.clear);

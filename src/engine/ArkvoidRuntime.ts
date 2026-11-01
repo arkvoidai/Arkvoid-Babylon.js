@@ -147,7 +147,7 @@ export function createArkvoidRuntime(canvas:HTMLCanvasElement,callbacks:RuntimeC
       camera.target.copyFrom(target);
       updateContext();
     }
-    residents.forEach((r,i)=>r.rig.update(dt,false));
+    residents.forEach(r=>r.rig.update(dt,false));
     quality.update(dt);statsTimer+=dt;atmosphereTimer+=dt;
     if(atmosphereTimer>1){atmosphereTimer=0;updateAtmosphere();}
     if(statsTimer>1){
