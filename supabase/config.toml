@@ -1,0 +1,2 @@
+[functions.mistral-npc]
+verify_jwt = true
