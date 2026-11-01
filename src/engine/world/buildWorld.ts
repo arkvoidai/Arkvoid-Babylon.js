@@ -104,14 +104,14 @@ export function buildWorld(scene: Scene, shadows: ShadowGenerator): WorldMateria
   const islandBase = MeshBuilder.CreateCylinder("floating-island-mass", {
     height: 29, diameterTop: 88, diameterBottom: 22, tessellation: 96
   }, scene);
-  islandBase.position.y = -12.3; islandBase.material = m.cliff; islandBase.receiveShadows = true;
+  islandBase.position.y = -17.1; islandBase.material = m.cliff; islandBase.receiveShadows = true;
   const lowerShelf = MeshBuilder.CreateCylinder("island-rock-shelf", {
     height: 2, diameterTop: 76, diameterBottom: 57, tessellation: 80
   }, scene);
   lowerShelf.position.y = -8; lowerShelf.material = m.stone;
 
   const rim = MeshBuilder.CreateTorus("moss-rim", { diameter: 85, thickness: 1.1, tessellation: 96 }, scene);
-  rim.position.y = 1.45; rim.scaling.y = .45; rim.material = m.moss;
+  rim.position.y = -1.55; rim.scaling.y = .45; rim.material = m.moss;
 
   const steppingStone = MeshBuilder.CreateBox("walkway-stone-source", { width: 1.15, height: .2, depth: 1.45 }, scene);
   steppingStone.material = m.path;
@@ -155,7 +155,7 @@ export function buildWorld(scene: Scene, shadows: ShadowGenerator): WorldMateria
   }
   for (let n=0; n<6; n++) {
     const step = MeshBuilder.CreateBox("sanctuary-step-"+n, { width: 4.2+n*.32, height: .18, depth: .58 }, scene);
-    step.position.set(0, 2.55+n*.19, -2+n*.48); step.material = m.path;
+    step.position.set(0, 2.22+n*.14, .3-n*.72); step.material = m.path;
   }
 
   // Instanced foliage: shared meshes keep the island's draw-call count bounded.
