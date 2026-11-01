@@ -97,12 +97,8 @@ export function buildWorld(scene: Scene, shadows: ShadowGenerator): WorldMateria
   terrainData.colors = colors;
   const ground = new Mesh("home-reach-ground", scene);
   terrainData.applyToMesh(ground, true);
-  const terrainMaterial = new StandardMaterial("terrain-vertex-colour", scene);
-  terrainMaterial.diffuseColor = Color3.White();
-  terrainMaterial.specularColor = new Color3(.14, .14, .14);
-  terrainMaterial.specularPower = 48;
   ground.useVertexColors = true;
-  ground.material = terrainMaterial;
+  ground.material = m.porcelain;
   ground.receiveShadows = true;
 
   const islandBase = MeshBuilder.CreateCylinder("floating-island-mass", {

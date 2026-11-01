@@ -44,7 +44,14 @@ function applyTransform(root: TransformNode, config: AssetTransform): void {
   if (typeof config.scale === "number") root.scaling.setAll(config.scale);
   else if (config.scale) root.scaling.copyFrom(Vector3.FromArray(config.scale));
 }
-function useTexture(path: string | undefined, scene: Scene, assign: (texture: Texture) => void, label: string): void {
+function useTexture(
+  path: string | undefined,
+  scene: Scene,
+  assign: (texture: Texture) => void,
+  label: string,
+  uScale: number,
+  vScale: number,
+): void {
   if (!path) return;
   if (!isTexturePath(path)) {
     console.warn("Arkvoid texture path was rejected:", path);
@@ -52,6 +59,8 @@ function useTexture(path: string | undefined, scene: Scene, assign: (texture: Te
   }
   const texture = new Texture(path, scene, false, false, Texture.TRILINEAR_SAMPLINGMODE);
   texture.name = "arkvoid-" + label;
+  texture.uScale = uScale;
+  texture.vScale = vScale;
   assign(texture);
 }
 
@@ -82,16 +91,12 @@ export class AssetRegistry {
     for (const [key, maps] of Object.entries(manifest.materials ?? {})) {
       const material = materials[key as keyof WorldMaterials];
       if (!(material instanceof PBRMaterial)) continue;
-      useTexture(maps.baseColor, this.scene, value => { material.albedoTexture = value; }, key + "-base-color");
-      useTexture(maps.normal, this.scene, value => { material.bumpTexture = value; }, key + "-normal");
-      useTexture(maps.metallicRoughness, this.scene, value => { material.metallicTexture = value; }, key + "-metallic-roughness");
-      useTexture(maps.ambientOcclusion, this.scene, value => { material.ambientTexture = value; }, key + "-ambient-occlusion");
-      for (const texture of [material.albedoTexture, material.bumpTexture, material.metallicTexture, material.ambientTexture]) {
-        if (texture) {
-          texture.uScale = maps.uScale ?? 1;
-          texture.vScale = maps.vScale ?? 1;
-        }
-      }
+      const uScale = maps.uScale ?? 1;
+      const vScale = maps.vScale ?? 1;
+      useTexture(maps.baseColor, this.scene, value => { material.albedoTexture = value; }, key + "-base-color", uScale, vScale);
+      useTexture(maps.normal, this.scene, value => { material.bumpTexture = value; }, key + "-normal", uScale, vScale);
+      useTexture(maps.metallicRoughness, this.scene, value => { material.metallicTexture = value; }, key + "-metallic-roughness", uScale, vScale);
+      useTexture(maps.ambientOcclusion, this.scene, value => { material.ambientTexture = value; }, key + "-ambient-occlusion", uScale, vScale);
     }
   }
   async loadManifest(
