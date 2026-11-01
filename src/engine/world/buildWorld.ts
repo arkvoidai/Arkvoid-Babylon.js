@@ -101,7 +101,7 @@ export function buildWorld(scene: Scene, shadows: ShadowGenerator): WorldMateria
   terrainMaterial.diffuseColor = Color3.White();
   terrainMaterial.specularColor = new Color3(.14, .14, .14);
   terrainMaterial.specularPower = 48;
-  terrainMaterial.useVertexColor = true;
+  ground.useVertexColors = true;
   ground.material = terrainMaterial;
   ground.receiveShadows = true;
 
