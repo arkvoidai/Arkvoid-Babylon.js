@@ -4,16 +4,22 @@ React mounts the experience and creates the Babylon runtime once. Babylon owns t
 
 - app/WorldExperience.tsx — runtime lifecycle and UI callbacks
 - engine/ArkvoidRuntime.ts — engine, scene, camera, lighting, loop and interactions
-- engine/actors — player avatar and camera-relative movement
-- engine/world — materials, terrain, architecture, foliage, cloud sea
+- engine/actors — player actor and camera-relative movement
+- engine/world — PBR materials, radial island terrain, architecture, instanced foliage and cloud sea
 - engine/core — deterministic four-hour world clock
-- engine/assets — optional GLB loader restricted to local public assets
-- net — optional Supabase RPC and resident Edge Function adapters
+- engine/assets — local-only GLB loader, manifest parser, transform/animation wiring and PBR texture assignment
+- net — optional Supabase RPC and resident Edge Function client
 - state — small UI-facing store
-- ui — Pearl gate, Orb, action pill, dialogue and mobile joystick
+- ui — Pearl gate, Orb, contextual action, resident dialogue and mobile joystick
 
-The runtime is disposed on unmount. Resize and visibility handlers are removed during teardown. The engine pauses while the browser tab is hidden.
+React does not own the render loop. A single Babylon scene is disposed on unmount, along with input listeners, observers, imported GLBs, animation groups, materials and the engine. Rendering pauses while the browser tab is hidden.
 
-Movement uses the camera yaw as its basis and bounded island coordinates. Terrain height is shared with the rendered ground. The GLB registry allows local /assets/ paths only and catches optional-asset load errors without stopping the world.
+Movement uses camera yaw as its basis and bounded island coordinates. Terrain height is shared between the rendered island and character movement. Cloud banks, canopy crowns and lanterns receive low-amplitude procedural motion in the Babylon loop.
 
-Supabase is optional in local development. Signed-in users can use the world clock, gather RPC and resident function. Without a session, the environment can be explored as a temporary guest; local guest actions are not represented as server-persisted progression.
+## Asset manifest
+
+The app reads `/assets/asset-manifest.json` on boot. Optional environment GLBs, character GLBs and PBR maps are applied only when their paths are listed. Every GLB must be local to `public/assets/`; arbitrary remote model URLs are rejected. Procedural character silhouettes remain visible if a character model is missing or fails to load.
+
+## World data
+
+Supabase is optional in local development. Signed-in users can use the server world clock, gather RPC and Mistral resident Edge Function. Without a session, the world remains explorable as a temporary guest; guest actions are not represented as persisted progression. Provider keys remain in Edge Function secrets.

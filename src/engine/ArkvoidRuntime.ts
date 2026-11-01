@@ -2,7 +2,7 @@ import {
   ArcRotateCamera, Color3, Color4, DefaultRenderingPipeline, DirectionalLight, Engine,
   HemisphericLight, PointerEventTypes, Scene, ShadowGenerator, Vector3
 } from "@babylonjs/core";
-import { createDynamicAvatar, buildWorld, terrainHeightAt } from "@/engine/world/buildWorld";
+import { createDynamicAvatar, buildWorld, terrainHeightAt } from "@/engine/world/buildWorld";\nimport { AssetRegistry, type LoadedAsset } from "@/engine/assets/AssetRegistry";
 import { MovementController } from "@/engine/actors/MovementController";
 import { QualityGovernor } from "@/engine/QualityGovernor";
 import { formatWorldTime, getWorldClock } from "@/engine/core/WorldClock";
@@ -49,7 +49,7 @@ export function createArkvoidRuntime(canvas:HTMLCanvasElement,callbacks:RuntimeC
     pipeline.imageProcessing.exposure=1.02;pipeline.imageProcessing.toneMappingEnabled=true;
   } catch (error) { console.warn("Optional post processing was disabled.",error); }
 
-  buildWorld(scene,shadows);
+  const materials=buildWorld(scene,shadows);
   const player=createDynamicAvatar(scene,"wanderer",{
     robe:new Color3(.24,.33,.31),trim:new Color3(.66,.48,.26),hair:new Color3(.1,.09,.1)
   });
@@ -75,9 +75,25 @@ export function createArkvoidRuntime(canvas:HTMLCanvasElement,callbacks:RuntimeC
     rig.root.setEnabled(false);shadows.addShadowCaster(rig.root,true);
     return {info,rig};
   });
+  let entered=false,disposed=false,lastContext="",statsTimer=0,atmosphereTimer=0,worldMotionTime=0;
   const mover=new MovementController(camera,player,terrainHeightAt);
   const target=new Vector3(0,3,12);
-  let entered=false,disposed=false,lastContext="",statsTimer=0,atmosphereTimer=0;
+  const assetRegistry=new AssetRegistry(scene);
+  const loadedAssets:LoadedAsset[]=[];
+  const characterTargets={
+    wanderer:player,meilin:residents[0].rig,yue:residents[1].rig,sylva:residents[2].rig
+  };
+  void assetRegistry.loadManifest(characterTargets,materials).then(assets=>{
+    if(disposed){assets.forEach(asset=>asset.dispose());return;}
+    loadedAssets.push(...assets);
+  }).catch(error=>console.warn("Optional Arkvoid asset manifest could not be applied.",error));
+  const cloudMotion=scene.meshes.filter(mesh=>mesh.name.startsWith("cloud-bank-")).map((mesh,index)=>({
+    mesh,baseX:mesh.position.x,baseY:mesh.position.y,baseZ:mesh.position.z,phase:index*.37
+  }));
+  const canopyMotion=scene.meshes.filter(mesh=>mesh.name.startsWith("tree-crown-"));
+  const lanternMotion=scene.meshes.filter(mesh=>mesh.name.startsWith("spirit-lantern-")).map((mesh,index)=>({
+    mesh,baseY:mesh.position.y,phase:index*.61
+  }));
   const nearestResident=():ResidentActor|null=>{
     if(!entered)return null;
     let nearest:ResidentActor|null=null;let distance=5.7;
@@ -141,6 +157,19 @@ export function createArkvoidRuntime(canvas:HTMLCanvasElement,callbacks:RuntimeC
   const render=()=>{
     if(disposed)return;
     const dt=Math.min(engine.getDeltaTime()/1000,.05);
+    worldMotionTime+=dt;
+    cloudMotion.forEach(cloud=>{
+      cloud.mesh.position.set(
+        cloud.baseX+Math.sin(worldMotionTime*.035+cloud.phase)*.85,
+        cloud.baseY+Math.sin(worldMotionTime*.19+cloud.phase)*.3,
+        cloud.baseZ+Math.cos(worldMotionTime*.028+cloud.phase)*.55
+      );
+    });
+    canopyMotion.forEach((mesh,index)=>{mesh.rotation.z=Math.sin(worldMotionTime*.32+index*.73)*.014;});
+    lanternMotion.forEach(({mesh,baseY,phase})=>{
+      mesh.position.y=baseY+Math.sin(worldMotionTime*.8+phase)*.12;
+      mesh.scaling.setAll(1+Math.sin(worldMotionTime*1.4+phase)*.12);
+    });
     if(entered){
       mover.update(dt);
       target.set(player.root.position.x,player.root.position.y+1.4,player.root.position.z);
@@ -170,8 +199,9 @@ export function createArkvoidRuntime(canvas:HTMLCanvasElement,callbacks:RuntimeC
     dispose(){
       if(disposed)return;disposed=true;
       window.removeEventListener("resize",resize);document.removeEventListener("visibilitychange",visibility);
-      scene.onPointerObservable.remove(pointerObserver);mover.dispose();player.dispose();
-      residents.forEach(r=>r.rig.dispose());scene.dispose();engine.dispose();
+      scene.onPointerObservable.remove(pointerObserver);mover.dispose();
+      loadedAssets.forEach(asset=>asset.dispose());loadedAssets.length=0;
+      player.dispose();residents.forEach(r=>r.rig.dispose());scene.dispose();engine.dispose();
     }
   };
 }

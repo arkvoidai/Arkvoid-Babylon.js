@@ -1,5 +1,5 @@
 import {
-  Color3, Mesh, MeshBuilder, PBRMaterial, Scene, ShadowGenerator, StandardMaterial,
+  AnimationGroup, Color3, Mesh, MeshBuilder, PBRMaterial, Scene, ShadowGenerator, StandardMaterial,
   VertexData
 } from "@babylonjs/core";
 
@@ -214,44 +214,69 @@ export function buildWorld(scene: Scene, shadows: ShadowGenerator): WorldMateria
   return m;
 }
 
-export function createDynamicAvatar(scene: Scene, id: string, colors: { robe: Color3; trim: Color3; hair: Color3 }): { root: Mesh; update(dt: number, moving: boolean): void; dispose(): void } {
-  const root = new Mesh(id+"-root",scene);
-  const visual = new Mesh(id+"-visual",scene); visual.parent=root;
-  const robe = pbr(scene,id+"-robe",colors.robe,.83);
-  const hair = pbr(scene,id+"-hair",colors.hair,.9);
-  const skin = pbr(scene,id+"-skin",new Color3(.72,.56,.46),.9);
-  const trim = pbr(scene,id+"-trim",colors.trim,.4,.34);
-  const torso=MeshBuilder.CreateCylinder(id+"-robe-body",{height:1.35,diameterTop:.48,diameterBottom:.9,tessellation:18},scene);
-  torso.parent=visual; torso.position.y=.9; torso.material=robe;
-  const inner=MeshBuilder.CreateCylinder(id+"-inner-robe",{height:1.18,diameterTop:.34,diameterBottom:.67,tessellation:16},scene);
-  inner.parent=visual; inner.position.set(0,.95,-.015); inner.material=scene.getMaterialByName("porcelain") ?? robe;
-  const head=MeshBuilder.CreateSphere(id+"-head",{diameter:.56,segments:16},scene);
-  head.parent=visual; head.position.y=1.83; head.material=skin;
-  const hairCap=MeshBuilder.CreateSphere(id+"-hair-cap",{diameter:.62,segments:16},scene);
-  hairCap.parent=visual; hairCap.position.set(0,2.02,.025); hairCap.scaling.y=.72; hairCap.material=hair;
-  const arms: Mesh[]=[];
-  for(const side of [-1,1]){
-    const eye=MeshBuilder.CreateSphere(id+"-eye-"+side,{diameter:.07,segments:8},scene);
-    eye.parent=visual; eye.position.set(side*.13,1.86,-.265); eye.material=trim;
-    const lock=MeshBuilder.CreateCylinder(id+"-lock-"+side,{height:.7,diameterTop:.08,diameterBottom:.15,tessellation:8},scene);
-    lock.parent=visual; lock.position.set(side*.24,1.55,-.08); lock.material=hair;
-    const arm=MeshBuilder.CreateCylinder(id+"-sleeve-"+side,{height:.83,diameterTop:.18,diameterBottom:.27,tessellation:10},scene);
-    arm.parent=visual; arm.position.set(side*.47,1.07,0); arm.rotation.z=side*-.35; arm.material=robe; arms.push(arm);
+export function createDynamicAvatar(scene: Scene, id: string, colors: { robe: Color3; trim: Color3; hair: Color3 }): {
+  root: Mesh;
+  update(dt: number, moving: boolean): void;
+  setFallbackVisible(value: boolean): void;
+  setAnimations(idle: AnimationGroup | undefined, walk: AnimationGroup | undefined): void;
+  dispose(): void;
+} {
+  const root = new Mesh(id + "-root", scene);
+  const visual = new Mesh(id + "-visual", scene);
+  visual.parent = root;
+  const robe = pbr(scene, id + "-robe", colors.robe, .83);
+  const hair = pbr(scene, id + "-hair", colors.hair, .9);
+  const skin = pbr(scene, id + "-skin", new Color3(.72, .56, .46), .9);
+  const trim = pbr(scene, id + "-trim", colors.trim, .4, .34);
+  const torso = MeshBuilder.CreateCylinder(id + "-robe-body", { height: 1.35, diameterTop: .48, diameterBottom: .9, tessellation: 18 }, scene);
+  torso.parent = visual; torso.position.y = .9; torso.material = robe;
+  const inner = MeshBuilder.CreateCylinder(id + "-inner-robe", { height: 1.18, diameterTop: .34, diameterBottom: .67, tessellation: 16 }, scene);
+  inner.parent = visual; inner.position.set(0, .95, -.015); inner.material = scene.getMaterialByName("porcelain") ?? robe;
+  const head = MeshBuilder.CreateSphere(id + "-head", { diameter: .56, segments: 16 }, scene);
+  head.parent = visual; head.position.y = 1.83; head.material = skin;
+  const hairCap = MeshBuilder.CreateSphere(id + "-hair-cap", { diameter: .62, segments: 16 }, scene);
+  hairCap.parent = visual; hairCap.position.set(0, 2.02, .025); hairCap.scaling.y = .72; hairCap.material = hair;
+  const arms: Mesh[] = [];
+  for (const side of [-1, 1]) {
+    const eye = MeshBuilder.CreateSphere(id + "-eye-" + side, { diameter: .07, segments: 8 }, scene);
+    eye.parent = visual; eye.position.set(side * .13, 1.86, -.265); eye.material = trim;
+    const lock = MeshBuilder.CreateCylinder(id + "-lock-" + side, { height: .7, diameterTop: .08, diameterBottom: .15, tessellation: 8 }, scene);
+    lock.parent = visual; lock.position.set(side * .24, 1.55, -.08); lock.material = hair;
+    const arm = MeshBuilder.CreateCylinder(id + "-sleeve-" + side, { height: .83, diameterTop: .18, diameterBottom: .27, tessellation: 10 }, scene);
+    arm.parent = visual; arm.position.set(side * .47, 1.07, 0); arm.rotation.z = side * -.35; arm.material = robe;
+    arms.push(arm);
   }
-  const collar=MeshBuilder.CreateTorus(id+"-collar",{diameter:.58,thickness:.06,tessellation:24},scene);
-  collar.parent=visual; collar.position.y=1.52; collar.rotation.x=Math.PI/2; collar.material=trim;
-  const belt=MeshBuilder.CreateCylinder(id+"-belt",{height:.1,diameter:.72,tessellation:16},scene);
-  belt.parent=visual; belt.position.y=.95; belt.material=trim;
-  visual.getChildMeshes().forEach(mesh=>{mesh.metadata={residentId:id};});
-  let elapsed=0;
+  const collar = MeshBuilder.CreateTorus(id + "-collar", { diameter: .58, thickness: .06, tessellation: 24 }, scene);
+  collar.parent = visual; collar.position.y = 1.52; collar.rotation.x = Math.PI / 2; collar.material = trim;
+  const belt = MeshBuilder.CreateCylinder(id + "-belt", { height: .1, diameter: .72, tessellation: 16 }, scene);
+  belt.parent = visual; belt.position.y = .95; belt.material = trim;
+  visual.getChildMeshes().forEach(mesh => { mesh.metadata = { residentId: id }; });
+  let elapsed = 0;
+  let idleGroup: AnimationGroup | undefined;
+  let walkGroup: AnimationGroup | undefined;
+  let activeGroup: AnimationGroup | undefined;
+  const activate = (group: AnimationGroup | undefined) => {
+    if (activeGroup === group) return;
+    activeGroup?.stop();
+    activeGroup = group;
+    activeGroup?.start(true);
+  };
   return {
     root,
-    update(dt,moving){
-      elapsed+=dt*(moving?8:1.2);
-      visual.position.y=moving?Math.abs(Math.sin(elapsed))*.035:Math.sin(elapsed)*.008;
-      visual.rotation.z=moving?Math.sin(elapsed*.5)*.016:0;
-      arms.forEach((arm,index)=>{arm.rotation.x=moving?Math.sin(elapsed+index*Math.PI)*.13:0;});
+    update(dt, moving) {
+      elapsed += dt * (moving ? 8 : 1.2);
+      visual.position.y = moving ? Math.abs(Math.sin(elapsed)) * .035 : Math.sin(elapsed) * .008;
+      visual.rotation.z = moving ? Math.sin(elapsed * .5) * .016 : 0;
+      arms.forEach((arm, index) => { arm.rotation.x = moving ? Math.sin(elapsed + index * Math.PI) * .13 : 0; });
+      activate(moving ? walkGroup ?? idleGroup : idleGroup);
     },
-    dispose(){root.dispose(false,false);[robe,hair,skin,trim].forEach(v=>v.dispose());}
+    setFallbackVisible(value) { visual.setEnabled(value); },
+    setAnimations(idle, walk) { idleGroup = idle; walkGroup = walk; activate(idleGroup); },
+    dispose() {
+      activeGroup?.stop();
+      root.dispose(false, false);
+      [robe, hair, skin, trim].forEach(value => value.dispose());
+    }
   };
 }
+\n
