@@ -1,6 +1,6 @@
 import {
   Color3, Mesh, MeshBuilder, PBRMaterial, Scene, ShadowGenerator, StandardMaterial,
-  VertexBuffer, VertexData
+  VertexData
 } from "@babylonjs/core";
 
 export interface WorldMaterials {
@@ -44,19 +44,62 @@ function seed(n: number): number { const v = Math.sin(n*127.1+311.7)*43758.5453;
 
 export function buildWorld(scene: Scene, shadows: ShadowGenerator): WorldMaterials {
   const m = createWorldMaterials(scene);
-  const ground = MeshBuilder.CreateGround("home-reach-ground", { width: 88, height: 88, subdivisions: 88 }, scene);
-  const positions = ground.getVerticesData(VertexBuffer.PositionKind);
-  if (positions) {
-    for (let i=0; i<positions.length; i+=3) positions[i+1] = terrainHeightAt(positions[i], positions[i+2]);
-    ground.updateVerticesData(VertexBuffer.PositionKind, positions);
-    const normals: number[] = [];
-    const indices = ground.getIndices();
-    if (indices) {
-      VertexData.ComputeNormals(positions, indices, normals);
-      ground.updateVerticesData(VertexBuffer.NormalKind, normals);
+  // Radial triangulation keeps the terrain entirely inside the floating island's rim.
+  const segments = 128;
+  const rings = 54;
+  const positions: number[] = [0, terrainHeightAt(0, 0), 0];
+  const colors: number[] = [.57, .59, .52, 1];
+  const indices: number[] = [];
+  const vegetation = new Color3(.53, .57, .48);
+  const rimStone = new Color3(.67, .65, .6);
+  for (let ring = 1; ring <= rings; ring += 1) {
+    const radius = (ring / rings) * 43.8;
+    const edgeBlend = Math.max(0, Math.min(1, (radius - 30) / 13.8));
+    for (let segment = 0; segment < segments; segment += 1) {
+      const angle = (segment / segments) * Math.PI * 2;
+      const x = Math.cos(angle) * radius;
+      const z = Math.sin(angle) * radius;
+      positions.push(x, terrainHeightAt(x, z), z);
+      const tint = Color3.Lerp(vegetation, rimStone, edgeBlend);
+      const variation = (Math.sin(x * .38) + Math.cos(z * .34)) * .012;
+      colors.push(
+        Math.max(0, tint.r + variation),
+        Math.max(0, tint.g + variation),
+        Math.max(0, tint.b + variation),
+        1
+      );
     }
   }
-  ground.material = m.porcelain; ground.receiveShadows = true;
+  const firstRing = 1;
+  for (let segment = 0; segment < segments; segment += 1) {
+    const current = firstRing + segment;
+    const next = firstRing + ((segment + 1) % segments);
+    indices.push(0, next, current);
+  }
+  for (let ring = 1; ring < rings; ring += 1) {
+    const inner = 1 + (ring - 1) * segments;
+    const outer = inner + segments;
+    for (let segment = 0; segment < segments; segment += 1) {
+      const next = (segment + 1) % segments;
+      const a = inner + segment;
+      const b = inner + next;
+      const c = outer + segment;
+      const d = outer + next;
+      indices.push(a, b, c, b, d, c);
+    }
+  }
+  const normals: number[] = [];
+  VertexData.ComputeNormals(positions, indices, normals);
+  const terrainData = new VertexData();
+  terrainData.positions = positions;
+  terrainData.indices = indices;
+  terrainData.normals = normals;
+  terrainData.colors = colors;
+  const ground = new Mesh("home-reach-ground", scene);
+  terrainData.applyToMesh(ground, true);
+  m.porcelain.useVertexColors = true;
+  ground.material = m.porcelain;
+  ground.receiveShadows = true;
 
   const islandBase = MeshBuilder.CreateCylinder("floating-island-mass", {
     height: 29, diameterTop: 88, diameterBottom: 22, tessellation: 96
@@ -69,6 +112,18 @@ export function buildWorld(scene: Scene, shadows: ShadowGenerator): WorldMateria
 
   const rim = MeshBuilder.CreateTorus("moss-rim", { diameter: 85, thickness: 1.1, tessellation: 96 }, scene);
   rim.position.y = 1.45; rim.scaling.y = .45; rim.material = m.moss;
+
+  const steppingStone = MeshBuilder.CreateBox("walkway-stone-source", { width: 1.15, height: .2, depth: 1.45 }, scene);
+  steppingStone.material = m.path;
+  steppingStone.isVisible = false;
+  for (let index = 0; index < 20; index += 1) {
+    const z = 8 - index * .72;
+    const x = Math.sin(index * .39) * .2;
+    const stone = steppingStone.createInstance("sanctuary-walkway-" + index);
+    stone.position.set(x, terrainHeightAt(x, z) + .11, z);
+    stone.rotation.y = Math.sin(index * .61) * .045;
+    stone.scaling.set(.82 + (index % 3) * .08, 1, 1);
+  }
 
   // A quiet stepped sanctuary with timber lintels and a restrained bronze crown.
   const deck = MeshBuilder.CreateBox("sanctuary-foundation", { width: 13, height: .72, depth: 9.4 }, scene);
