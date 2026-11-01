@@ -279,4 +279,4 @@ export function createDynamicAvatar(scene: Scene, id: string, colors: { robe: Co
     }
   };
 }
-\n
+

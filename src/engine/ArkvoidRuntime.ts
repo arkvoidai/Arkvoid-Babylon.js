@@ -2,7 +2,8 @@ import {
   ArcRotateCamera, Color3, Color4, DefaultRenderingPipeline, DirectionalLight, Engine,
   HemisphericLight, PointerEventTypes, Scene, ShadowGenerator, Vector3
 } from "@babylonjs/core";
-import { createDynamicAvatar, buildWorld, terrainHeightAt } from "@/engine/world/buildWorld";\nimport { AssetRegistry, type LoadedAsset } from "@/engine/assets/AssetRegistry";
+import { createDynamicAvatar, buildWorld, terrainHeightAt } from "@/engine/world/buildWorld";
+import { AssetRegistry, type LoadedAsset } from "@/engine/assets/AssetRegistry";
 import { MovementController } from "@/engine/actors/MovementController";
 import { QualityGovernor } from "@/engine/QualityGovernor";
 import { formatWorldTime, getWorldClock } from "@/engine/core/WorldClock";
