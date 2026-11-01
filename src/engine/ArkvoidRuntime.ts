@@ -1,6 +1,6 @@
 import {
   ArcRotateCamera, Color3, Color4, DefaultRenderingPipeline, DirectionalLight, Engine,
-  HemisphericLight, MeshBuilder, PointerEventTypes, Scene, ShadowGenerator, Vector2, Vector3
+  HemisphericLight, PointerEventTypes, Scene, ShadowGenerator, Vector3
 } from "@babylonjs/core";
 import { createDynamicAvatar, buildWorld, terrainHeightAt } from "@/engine/world/buildWorld";
 import { MovementController } from "@/engine/actors/MovementController";
@@ -144,7 +144,7 @@ export function createArkvoidRuntime(canvas:HTMLCanvasElement,callbacks:RuntimeC
     if(entered){
       mover.update(dt);
       target.set(player.root.position.x,player.root.position.y+1.4,player.root.position.z);
-      camera.setTarget(target);
+      camera.target.copyFrom(target);
       updateContext();
     }
     residents.forEach((r,i)=>r.rig.update(dt,false));

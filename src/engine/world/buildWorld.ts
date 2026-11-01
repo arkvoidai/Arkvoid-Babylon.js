@@ -183,6 +183,7 @@ export function createDynamicAvatar(scene: Scene, id: string, colors: { robe: Co
   collar.parent=visual; collar.position.y=1.52; collar.rotation.x=Math.PI/2; collar.material=trim;
   const belt=MeshBuilder.CreateCylinder(id+"-belt",{height:.1,diameter:.72,tessellation:16},scene);
   belt.parent=visual; belt.position.y=.95; belt.material=trim;
+  visual.getChildMeshes().forEach(mesh=>{mesh.metadata={residentId:id};});
   let elapsed=0;
   return {
     root,
